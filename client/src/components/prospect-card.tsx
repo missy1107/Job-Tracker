@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { Prospect } from "@shared/schema";
 import { PREP_ITEMS } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Trash2, Pencil, Flame, ThumbsUp, Minus, DollarSign } from "lucide-react";
+import { ExternalLink, Trash2, Pencil, Flame, ThumbsUp, Minus, DollarSign, Check } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -112,7 +112,7 @@ function PrepChecklist({
     >
       <div className="flex items-center justify-between mb-1.5">
         <p className="text-[11px] font-semibold text-muted-foreground tracking-wide">
-          ⭐ Prep Checklist ⭐
+          Prep Checklist
         </p>
         <span className="text-[10px] text-muted-foreground">
           {doneCount}/{PREP_ITEMS.length}
@@ -126,23 +126,15 @@ function PrepChecklist({
               role="checkbox"
               aria-checked={checklist[i]}
               onClick={(e) => toggle(i, e)}
-              className="flex-shrink-0 w-3.5 h-3.5 rounded-sm border border-border/70 flex items-center justify-center transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              style={{
-                backgroundColor: checklist[i] ? "var(--primary)" : "transparent",
-                borderColor: checklist[i] ? "var(--primary)" : undefined,
-              }}
+              className={`flex-shrink-0 w-3.5 h-3.5 rounded-sm border flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
+                checklist[i]
+                  ? "bg-primary border-primary"
+                  : "bg-transparent border-border/70 hover:border-primary"
+              }`}
               data-testid={`checklist-item-${prospectId}-${i}`}
             >
               {checklist[i] && (
-                <svg
-                  className="w-2 h-2 text-primary-foreground"
-                  fill="none"
-                  viewBox="0 0 12 12"
-                  stroke="currentColor"
-                  strokeWidth={2.5}
-                >
-                  <polyline points="1.5,6 4.5,9 10.5,3" />
-                </svg>
+                <Check className="w-2.5 h-2.5 text-primary-foreground" strokeWidth={3} />
               )}
             </button>
             <span
