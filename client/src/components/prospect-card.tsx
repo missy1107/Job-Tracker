@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Prospect } from "@shared/schema";
+import { PREP_ITEMS } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Trash2, Pencil, Flame, ThumbsUp, Minus, DollarSign } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
@@ -59,9 +60,113 @@ function SalaryDisplay({ salary }: { salary: number | null | undefined }) {
   );
 }
 
+function PrepChecklist({
+  prospectId,
+  checklist,
+}: {
+  prospectId: number;
+  checklist: boolean[];
+}) {
+  const { toast } = useToast();
+
+  const checklistMutation = useMutation({
+    mutationFn: async (newChecklist: boolean[]) => {
+      await apiRequest("PATCH", `/api/prospects/${prospectId}`, {
+        prepChecklist: newChecklist,
+      });
+    },
+    onMutate: async (newChecklist) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/prospects"] });
+      const previous = queryClient.getQueryData<Prospect[]>(["/api/prospects"]);
+      queryClient.setQueryData<Prospect[]>(["/api/prospects"], (old) =>
+        old?.map((p) =>
+          p.id === prospectId ? { ...p, prepChecklist: newChecklist } : p,
+        ) ?? [],
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) {
+        queryClient.setQueryData(["/api/prospects"], ctx.previous);
+      }
+      toast({ title: "Failed to save checklist", variant: "destructive" });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/prospects"] });
+    },
+  });
+
+  const toggle = (index: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = checklist.map((v, i) => (i === index ? !v : v));
+    checklistMutation.mutate(updated);
+  };
+
+  const doneCount = checklist.filter(Boolean).length;
+
+  return (
+    <div
+      className="pt-2 mt-1 border-t border-border/40"
+      onClick={(e) => e.stopPropagation()}
+      data-testid={`prep-checklist-${prospectId}`}
+    >
+      <div className="flex items-center justify-between mb-1.5">
+        <p className="text-[11px] font-semibold text-muted-foreground tracking-wide">
+          ⭐ Prep Checklist ⭐
+        </p>
+        <span className="text-[10px] text-muted-foreground">
+          {doneCount}/{PREP_ITEMS.length}
+        </span>
+      </div>
+      <ul className="space-y-1">
+        {PREP_ITEMS.map((item, i) => (
+          <li key={item} className="flex items-center gap-2">
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={checklist[i]}
+              onClick={(e) => toggle(i, e)}
+              className="flex-shrink-0 w-3.5 h-3.5 rounded-sm border border-border/70 flex items-center justify-center transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              style={{
+                backgroundColor: checklist[i] ? "var(--primary)" : "transparent",
+                borderColor: checklist[i] ? "var(--primary)" : undefined,
+              }}
+              data-testid={`checklist-item-${prospectId}-${i}`}
+            >
+              {checklist[i] && (
+                <svg
+                  className="w-2 h-2 text-primary-foreground"
+                  fill="none"
+                  viewBox="0 0 12 12"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <polyline points="1.5,6 4.5,9 10.5,3" />
+                </svg>
+              )}
+            </button>
+            <span
+              className={`text-[11px] leading-tight transition-colors ${
+                checklist[i] ? "text-muted-foreground line-through" : "text-foreground"
+              }`}
+            >
+              {item}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function ProspectCard({ prospect }: { prospect: Prospect }) {
   const { toast } = useToast();
   const [editOpen, setEditOpen] = useState(false);
+
+  const checklist: boolean[] =
+    Array.isArray(prospect.prepChecklist) && prospect.prepChecklist.length === PREP_ITEMS.length
+      ? (prospect.prepChecklist as boolean[])
+      : Array(PREP_ITEMS.length).fill(false);
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -145,6 +250,8 @@ export function ProspectCard({ prospect }: { prospect: Prospect }) {
             {prospect.notes}
           </p>
         )}
+
+        <PrepChecklist prospectId={prospect.id} checklist={checklist} />
       </div>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
