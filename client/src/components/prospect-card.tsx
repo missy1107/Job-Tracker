@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Prospect } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Trash2, Pencil, Flame, ThumbsUp, Minus } from "lucide-react";
+import { ExternalLink, Trash2, Pencil, Flame, ThumbsUp, Minus, DollarSign } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +39,24 @@ function InterestIndicator({ level }: { level: string }) {
     default:
       return null;
   }
+}
+
+function SalaryDisplay({ salary }: { salary: number | null | undefined }) {
+  if (!salary) return null;
+  const formatted = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(salary);
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400"
+      data-testid="salary-display"
+    >
+      <DollarSign className="w-3 h-3" />
+      {formatted.replace("$", "")}
+    </span>
+  );
 }
 
 export function ProspectCard({ prospect }: { prospect: Prospect }) {
@@ -103,8 +121,9 @@ export function ProspectCard({ prospect }: { prospect: Prospect }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           <InterestIndicator level={prospect.interestLevel} />
+          <SalaryDisplay salary={prospect.targetSalary} />
         </div>
 
         {prospect.jobUrl && (

@@ -40,6 +40,14 @@ export async function registerRoutes(
     if (body.jobUrl !== undefined) updates.jobUrl = body.jobUrl;
     if (body.notes !== undefined) updates.notes = body.notes;
 
+    if (body.targetSalary !== undefined) {
+      const parsed = insertProspectSchema.shape.targetSalary.safeParse(body.targetSalary);
+      if (!parsed.success) {
+        return res.status(400).json({ message: parsed.error.errors.map((e) => e.message).join(", ") });
+      }
+      updates.targetSalary = parsed.data ?? null;
+    }
+
     if (body.status !== undefined) {
       if (!STATUSES.includes(body.status)) {
         return res.status(400).json({ message: `Status must be one of: ${STATUSES.join(", ")}` });

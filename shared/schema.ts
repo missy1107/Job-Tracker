@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -22,6 +22,7 @@ export const prospects = pgTable("prospects", {
   status: text("status").notNull().default("Bookmarked"),
   interestLevel: text("interest_level").notNull().default("Medium"),
   notes: text("notes"),
+  targetSalary: integer("target_salary"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -35,6 +36,21 @@ export const insertProspectSchema = createInsertSchema(prospects).omit({
   interestLevel: z.enum(INTEREST_LEVELS).default("Medium"),
   jobUrl: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
+  targetSalary: z.preprocess(
+    (val) => {
+      if (val === "" || val === null || val === undefined) return null;
+      const cleaned = String(val).replace(/[$,\s]/g, "");
+      const num = Number(cleaned);
+      return isNaN(num) ? val : num;
+    },
+    z
+      .number({ invalid_type_error: "Salary must be a valid number" })
+      .int("Salary must be a whole number")
+      .positive("Salary must be greater than 0")
+      .max(10_000_000, "Salary must be $10,000,000 or less")
+      .nullable()
+      .optional(),
+  ),
 });
 
 export type InsertProspect = z.infer<typeof insertProspectSchema>;

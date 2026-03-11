@@ -39,6 +39,16 @@ export function validateProspect(data: Record<string, unknown>): { valid: boolea
     }
   }
 
+  if (data.targetSalary !== undefined && data.targetSalary !== null) {
+    const raw = data.targetSalary;
+    const cleaned = typeof raw === "string" ? Number(raw.replace(/[$,\s]/g, "")) : Number(raw);
+    if (!Number.isInteger(cleaned) || cleaned <= 0) {
+      errors.push("Salary must be a positive whole number");
+    } else if (cleaned > 10_000_000) {
+      errors.push("Salary must be $10,000,000 or less");
+    }
+  }
+
   return { valid: errors.length === 0, errors };
 }
 
