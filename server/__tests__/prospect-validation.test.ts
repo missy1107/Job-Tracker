@@ -1,4 +1,5 @@
 import { validateProspect } from "../prospect-helpers";
+import { PREP_ITEMS } from "../../shared/schema";
 
 describe("prospect creation validation", () => {
   test("rejects a blank company name", () => {
@@ -119,5 +120,84 @@ describe("salary validation", () => {
 
     expect(result.valid).toBe(false);
     expect(result.errors).toContain("Salary must be $10,000,000 or less");
+  });
+});
+
+describe("prep checklist validation", () => {
+  const base = { companyName: "Google", roleTitle: "Software Engineer" };
+  const allFalse = Array(PREP_ITEMS.length).fill(false);
+  const allTrue = Array(PREP_ITEMS.length).fill(true);
+  const mixed = [true, false, true, false];
+
+  test("accepts a valid all-false checklist", () => {
+    const result = validateProspect({ ...base, prepChecklist: allFalse });
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  test("accepts a valid all-true checklist", () => {
+    const result = validateProspect({ ...base, prepChecklist: allTrue });
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  test("accepts a valid mixed checklist", () => {
+    const result = validateProspect({ ...base, prepChecklist: mixed });
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  test("accepts null checklist (no checklist set)", () => {
+    const result = validateProspect({ ...base, prepChecklist: null });
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  test("accepts omitted checklist", () => {
+    const result = validateProspect({ ...base });
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  test("rejects checklist with wrong number of items", () => {
+    const result = validateProspect({ ...base, prepChecklist: [true, false] });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(`Prep checklist must have exactly ${PREP_ITEMS.length} items`);
+  });
+
+  test("rejects an empty checklist array", () => {
+    const result = validateProspect({ ...base, prepChecklist: [] });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(`Prep checklist must have exactly ${PREP_ITEMS.length} items`);
+  });
+
+  test("rejects checklist with non-boolean values", () => {
+    const result = validateProspect({
+      ...base,
+      prepChecklist: [1, 0, 1, 0],
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("Prep checklist items must be booleans");
+  });
+
+  test("rejects checklist that is not an array", () => {
+    const result = validateProspect({ ...base, prepChecklist: "done" });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("Prep checklist must be an array");
+  });
+
+  test("checklist state is independent per prospect (different checklist values are distinct)", () => {
+    const prospect1Result = validateProspect({ ...base, prepChecklist: [true, false, false, false] });
+    const prospect2Result = validateProspect({ ...base, prepChecklist: [false, true, true, false] });
+    expect(prospect1Result.valid).toBe(true);
+    expect(prospect2Result.valid).toBe(true);
+  });
+
+  test("PREP_ITEMS has exactly 4 items matching expected tasks", () => {
+    expect(PREP_ITEMS).toHaveLength(4);
+    expect(PREP_ITEMS).toContain("Research company");
+    expect(PREP_ITEMS).toContain("Review job description");
+    expect(PREP_ITEMS).toContain("Prepare strong stories");
+    expect(PREP_ITEMS).toContain("Prepare questions to ask");
   });
 });

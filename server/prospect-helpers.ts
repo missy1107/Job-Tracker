@@ -1,4 +1,4 @@
-import { STATUSES, INTEREST_LEVELS } from "@shared/schema";
+import { STATUSES, INTEREST_LEVELS, PREP_ITEMS } from "@shared/schema";
 
 export function getNextStatus(currentStatus: string): string {
   const terminalStatuses = ["Offer", "Rejected", "Withdrawn"];
@@ -46,6 +46,16 @@ export function validateProspect(data: Record<string, unknown>): { valid: boolea
       errors.push("Salary must be a positive whole number");
     } else if (cleaned > 10_000_000) {
       errors.push("Salary must be $10,000,000 or less");
+    }
+  }
+
+  if (data.prepChecklist !== undefined && data.prepChecklist !== null) {
+    if (!Array.isArray(data.prepChecklist)) {
+      errors.push("Prep checklist must be an array");
+    } else if (data.prepChecklist.length !== PREP_ITEMS.length) {
+      errors.push(`Prep checklist must have exactly ${PREP_ITEMS.length} items`);
+    } else if (!data.prepChecklist.every((item) => typeof item === "boolean")) {
+      errors.push("Prep checklist items must be booleans");
     }
   }
 

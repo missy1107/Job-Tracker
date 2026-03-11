@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertProspectSchema, STATUSES, INTEREST_LEVELS } from "@shared/schema";
+import { insertProspectSchema, STATUSES, INTEREST_LEVELS, PREP_ITEMS } from "@shared/schema";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -46,6 +46,22 @@ export async function registerRoutes(
         return res.status(400).json({ message: parsed.error.errors.map((e) => e.message).join(", ") });
       }
       updates.targetSalary = parsed.data ?? null;
+    }
+
+    if (body.prepChecklist !== undefined) {
+      const checklist = body.prepChecklist;
+      if (checklist !== null) {
+        if (
+          !Array.isArray(checklist) ||
+          checklist.length !== PREP_ITEMS.length ||
+          !checklist.every((item: unknown) => typeof item === "boolean")
+        ) {
+          return res.status(400).json({
+            message: `Prep checklist must be an array of exactly ${PREP_ITEMS.length} booleans`,
+          });
+        }
+      }
+      updates.prepChecklist = checklist;
     }
 
     if (body.status !== undefined) {

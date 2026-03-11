@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -14,6 +14,13 @@ export const STATUSES = [
 
 export const INTEREST_LEVELS = ["High", "Medium", "Low"] as const;
 
+export const PREP_ITEMS = [
+  "Research company",
+  "Review job description",
+  "Prepare strong stories",
+  "Prepare questions to ask",
+] as const;
+
 export const prospects = pgTable("prospects", {
   id: serial("id").primaryKey(),
   companyName: text("company_name").notNull(),
@@ -23,6 +30,7 @@ export const prospects = pgTable("prospects", {
   interestLevel: text("interest_level").notNull().default("Medium"),
   notes: text("notes"),
   targetSalary: integer("target_salary"),
+  prepChecklist: jsonb("prep_checklist").$type<boolean[]>(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -51,6 +59,11 @@ export const insertProspectSchema = createInsertSchema(prospects).omit({
       .nullable()
       .optional(),
   ),
+  prepChecklist: z
+    .array(z.boolean())
+    .length(PREP_ITEMS.length, `Prep checklist must have exactly ${PREP_ITEMS.length} items`)
+    .nullable()
+    .optional(),
 });
 
 export type InsertProspect = z.infer<typeof insertProspectSchema>;
